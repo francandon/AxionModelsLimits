@@ -3,34 +3,31 @@ import sys
 import os
 
 # 1. Initialize Panel
-pn.extension('ipywidgets', 'mathjax', sizing_mode="stretch_width")
+# We don't strictly need 'ipympl' in the extension if we handle it via requirements, 
+# but keeping it here is good practice.
+pn.extension('ipywidgets', 'ipympl', 'mathjax', sizing_mode="stretch_width")
 
-# --- WEB BROWSER DATA LOADING (Pyodide specific) ---
+# --- WEB BROWSER DATA LOADING (Native Pyodide) ---
 if 'pyodide' in sys.modules:
-    import pyodide_http
-    pyodide_http.patch_all() 
-    import requests
+    # Use Pyodide's built-in synchronous fetcher (no external deps needed)
+    from pyodide.http import open_url
     import zipfile
-    import io
     
-    # Only download if not already extracted
     if not os.path.exists('./PlotFuncs.py'):
         print("Downloading assets...")
-        # 'assets.zip' must be in the same folder as index.html on the website
-        response = requests.get('./assets.zip')
-        
-        if response.status_code == 200:
-            print("Extracting assets...")
-            with zipfile.ZipFile(io.BytesIO(response.content)) as z:
+        try:
+            # This fetches the file directly into memory
+            zip_stream = open_url('./assets.zip')
+            with zipfile.ZipFile(zip_stream) as z:
                 z.extractall('.')
-        else:
-            print(f"Failed to load assets.zip (Status: {response.status_code})")
+            print("Assets extracted.")
+        except Exception as e:
+            print(f"Failed to load assets.zip: {e}")
 
 # --- IMPORTS ---
 import ipywidgets as widgets
 import matplotlib.pyplot as plt
 import numpy as np
-from IPython.display import display, clear_output
 
 # Import your custom library
 # Ensure PlotFuncs.py and limit_data/ are in the same folder (or extracted there)
