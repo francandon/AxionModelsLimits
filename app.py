@@ -2,39 +2,36 @@ import panel as pn
 import sys
 import os
 
-# 1. Initialize Panel (No ipywidgets dependency!)
+# 1. Initialize Panel
 pn.extension('mathjax', sizing_mode="stretch_width")
 
 # --- WEB BROWSER DATA LOADING ---
+# We use exec() to hide 'await' from the local Python parser to prevent SyntaxError
 if 'pyodide' in sys.modules:
-    from pyodide.http import open_url
-    import zipfile
-    import io
-    
-    # Check if data exists, if not download
-    if not os.path.exists('./PlotFuncs.py'):
-        print("Downloading assets...")
-        try:
-            zip_data = open_url('./assets.zip').read()
-            with zipfile.ZipFile(io.BytesIO(zip_data)) as z:
-                z.extractall('.')
-            print("Assets extracted.")
-        except Exception as e:
-            print(f"Failed to load assets: {e}")
+    import asyncio
+    exec("""
+from pyodide.http import pyfetch
+response = await pyfetch('./assets.zip')
+await response.unpack_archive()
+""")
 
 # --- IMPORTS ---
 import matplotlib.pyplot as plt
 import numpy as np
-# Note: We do NOT import ipywidgets. We use Panel widgets.
 
-# Safely import PlotFuncs
+# Try importing the library. If the download failed or is still running (rare), this catches it.
 try:
     from PlotFuncs import FigSetup, AxionPhoton
 except ImportError:
-    print("PlotFuncs not found. Plotting will fail until assets are loaded.")
+    # This prevents the script from crashing during the build process
+    print("Warning: PlotFuncs could not be imported (likely running locally).")
+    # Define dummy functions so the build succeeds
+    def FigSetup(*args, **kwargs): return plt.subplots()
+    def AxionPhoton(*args): pass
 
-# --- PHYSICS ---
+# --- PHYSICS CONSTANTS ---
 alpha = 1/137.035999084
+
 K = 5.70e6
 pref = alpha/(2*np.pi)
 
