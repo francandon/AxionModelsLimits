@@ -1,3 +1,8 @@
+panel
+ipywidgets
+ipympl
 matplotlib
 numpy
-ipywidgets
+scipy
+requests
+pyodide-http 
