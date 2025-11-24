@@ -1,0 +1,16 @@
+{
+  "jupyter-lite-schema-version": 0,
+  "jupyter-lite": {
+    "outputDir": "docs"
+  },
+  "LiteBuildConfig": {
+    "output_dir": "docs",
+    "pyodide": true,
+    "contents": ["content"],
+    "federated_extensions": [
+      "@jupyter-widgets/jupyterlab-manager",
+      "jupyter-matplotlib",
+      "@jupyterlite/pyodide-kernel-extension"
+    ]
+  }
+}

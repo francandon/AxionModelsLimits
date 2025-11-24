@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Axion Photon Dashboard (Pyodide)</title>
+  <style>
+    body { font-family: system-ui, -apple-system, sans-serif; margin: 0; padding: 1rem; }
+    .controls { display: flex; gap: 2rem; flex-wrap: wrap; margin-bottom: 1rem; }
+    fieldset { border: 1px solid #ccc; border-radius: 8px; padding: 0.5rem 1rem; max-width: 320px; }
+    legend { font-weight: 600; }
+    #plot { max-width: 100%; border: 1px solid #ddd; border-radius: 8px; }
+    button { padding: 0.4rem 0.8rem; border-radius: 6px; border: 1px solid #888; cursor: pointer; }
+    label { display: block; margin: 0.15rem 0; }
+    .small { font-size: 0.85rem; color: #555; }
+  </style>
+</head>
+<body>
+  <h1>Axion–Photon Coupling Dashboard</h1>
+  <p class="small">
+    Runs fully in your browser using Pyodide. Use the controls and click <b>Update plot</b>.
+  </p>
+
+  <div class="controls">
+    <fieldset>
+      <legend>Mass range m<sub>a</sub> [eV]</legend>
+      <label>min: <input id="mmin" type="number" value="1e-12" step="any"></label>
+      <label>max: <input id="mmax" type="number" value="1e-1" step="any"></label>
+    </fieldset>
+
+    <fieldset>
+      <legend>Coupling |g<sub>aγ</sub>|</legend>
+      <label>min: <input id="ymin" type="number" value="1e-20" step="any"></label>
+      <label>max: <input id="ymax" type="number" value="1e-8" step="any"></label>
+    </fieldset>
+
+    <fieldset>
+      <legend>Models</legend>
+      <label><input type="checkbox" class="model" value="KSVZ" checked> KSVZ</label>
+      <label><input type="checkbox" class="model" value="DFSZ-I" checked> DFSZ-I</label>
+      <label><input type="checkbox" class="model" value="DFSZ-II" checked> DFSZ-II</label>
+      <label><input type="checkbox" class="model" value="Astrophobic QCD axion"> Astrophobic QCD</label>
+      <label><input type="checkbox" class="model" value="VISH$\\nu$"> VISHν</label>
+      <label><input type="checkbox" class="model" value="$\\nu$DFSZ"> νDFSZ</label>
+      <label><input type="checkbox" class="model" value="Majoraxion"> Majoraxion</label>
+      <label><input type="checkbox" class="model" value="Composite Axion"> Composite Axion</label>
+    </fieldset>
+
+    <fieldset>
+      <legend>Bounds</legend>
+      <label><input type="checkbox" class="cat" value="Helioscopes" checked> Helioscopes</label>
+      <label><input type="checkbox" class="cat" value="White Dwarfs"> White Dwarfs</label>
+      <label><input type="checkbox" class="cat" value="Stellar Bounds"> Stellar Bounds</label>
+      <label><input type="checkbox" class="cat" value="Haloscopes"> Haloscopes</label>
+      <label><input type="checkbox" class="cat" value="Solar Basin"> Solar Basin</label>
+      <label><input type="checkbox" class="cat" value="StAB"> StAB</label>
+      <label><input type="checkbox" class="cat" value="QCD Axion"> QCD Axion band</label>
+    </fieldset>
+  </div>
+
+  <button id="update">Update plot</button>
+  <span id="status" class="small"></span>
+
+  <div style="margin-top:1rem;">
+    <img id="plot" alt="Axion plot will appear here">
+  </div>
+
+  <script type="module">
+    import { loadPyodide } from "https://cdn.jsdelivr.net/pyodide/v0.26.4/full/pyodide.js";
+
+    let pyodide;
+
+    async function initPyodide() {
+      const status = document.getElementById("status");
+      status.textContent = "Loading Pyodide...";
+      pyodide = await loadPyodide();
+      status.textContent = "Loading numpy & matplotlib...";
+      await pyodide.loadPackage(["numpy", "matplotlib"]);
+
+      // load PlotFuncs.py and axion_dashboard.py from same directory
+      status.textContent = "Loading PlotFuncs and dashboard code...";
+      const plotFuncsCode = await (await fetch("PlotFuncs.py")).text();
+      await pyodide.runPythonAsync(plotFuncsCode);
+      const dashCode = await (await fetch("axion_dashboard.py")).text();
+      await pyodide.runPythonAsync(dashCode);
+      status.textContent = "Ready.";
+    }
+
+    function getConfigFromUI() {
+      const num = id => parseFloat(document.getElementById(id).value);
+      const models = [...document.querySelectorAll(".model:checked")].map(el => el.value);
+      const cats   = [...document.querySelectorAll(".cat:checked")].map(el => el.value);
+      return {
+        mmin: num("mmin"),
+        mmax: num("mmax"),
+        ymin: num("ymin"),
+        ymax: num("ymax"),
+        models,
+        categories: cats,
+      };
+    }
+
+    async function updatePlot() {
+      const status = document.getElementById("status");
+      status.textContent = "Computing plot...";
+      const cfg = getConfigFromUI();
+      const cfgJson = JSON.stringify(cfg);
+
+      // pass JSON into Python
+      pyodide.globals.set("CFG_JSON", cfgJson);
+      const b64 = await pyodide.runPythonAsync("from axion_dashboard import make_axion_plot\nmake_axion_plot(CFG_JSON)");
+      document.getElementById("plot").src = "data:image/png;base64," + b64;
+      status.textContent = "Done.";
+    }
+
+    document.getElementById("update").addEventListener("click", async () => {
+      try {
+        await updatePlot();
+      } catch (e) {
+        console.error(e);
+        document.getElementById("status").textContent = "Error: " + e;
+      }
+    });
+
+    // bootstrap
+    initPyodide().then(() => {
+      // auto-draw first plot
+      updatePlot().catch(err => console.error(err));
+    });
+  </script>
+</body>
+</html>
