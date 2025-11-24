@@ -79,10 +79,13 @@ categories = {
 
 # --- DASHBOARD CREATION FUNCTION ---
 def create_dashboard():
-    # 1. Setup Figure
+    # Force static backend (High definition PNGs)
+    plt.switch_backend('agg') 
+    
+    # 1. Setup Figure (Add dpi=150 for sharp text on screens)
     plt.close('all')
-    # We use mathpazo=False to avoid font issues in browser unless fonts are loaded
     fig, ax = FigSetup(Shape='Rectangular', ylab=r'$|g_{a\gamma}|$ [GeV$^{-1}$]', mathpazo=False)
+    fig.set_dpi(150) # Make it look sharp
     
     # 2. Define Helper Functions
     def html_label(html, width="160px"):
