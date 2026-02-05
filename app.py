@@ -20,6 +20,31 @@ pn.config.raw_css.append("""
     gap: 15px;
     align-items: center;
 }
+/* Style main collapsible cards (QCD Axion Models, Experimental Limits) */
+.pn-card > .card > .card-header {
+    background-color: #1B3B5A !important;
+    color: white !important;
+    font-weight: bold;
+}
+.pn-card > .card > .card-header button {
+    color: white !important;
+}
+/* Style category accordion tabs inside cards - lighter background */
+.card .nav-tabs .nav-link {
+    background-color: #f5f5f5 !important;
+    border-color: #ddd !important;
+    color: #333 !important;
+}
+.card .nav-tabs .nav-link:hover {
+    background-color: #e8e8e8 !important;
+}
+.card .nav-tabs .nav-link.active {
+    background-color: #ffffff !important;
+    border-color: #1B3B5A !important;
+    border-bottom-color: #ffffff !important;
+    color: #1B3B5A !important;
+    font-weight: 500;
+}
 """)
 
 # --- WEB BROWSER DATA LOADING ---
@@ -61,14 +86,14 @@ def g_agamma(m_eV, C):
     return np.abs(pref * C * (m_eV / K))
 
 models = [
-    {"name": "KSVZ", "Ndw": "1", "C": (-1.92, -1.92)},
-    {"name": "DFSZ-I", "Ndw": "6,3", "C": (0.75, 0.75)},
-    {"name": "DFSZ-II", "Ndw": "6,3", "C": (-1.25, -1.25)},
-    {"name": "Astrophobic QCD axion", "Ndw": "1,2", "C": (-6.59, 0.74)},
-    {"name": r"VISH$\nu$", "Ndw": "1", "C": (0.75, 0.75)},
-    {"name": r"$\nu$DFSZ", "Ndw": "6", "C": (0.75, 0.75)},
-    {"name": "Majoraxion", "Ndw": "—", "C": (2.66, 2.66)},
-    {"name": "Composite Axion", "Ndw": "0/2/6", "C": (1.33, 2.66)},
+    {"name": "KSVZ", "display_name": "KSVZ", "Ndw": "1", "C": (-1.92, -1.92), "category": "KSVZ-like"},
+    {"name": "DFSZ-I", "display_name": "DFSZ-I", "Ndw": "6,3", "C": (0.75, 0.75), "category": "DFSZ-like"},
+    {"name": "DFSZ-II", "display_name": "DFSZ-II", "Ndw": "6,3", "C": (-1.25, -1.25), "category": "DFSZ-like"},
+    {"name": "Astrophobic QCD axion", "display_name": "Astrophobic QCD axion", "Ndw": "1,2", "C": (-6.59, 0.74), "category": "Strongly deviated"},
+    {"name": r"VISH$\nu$", "display_name": "nu-VISH", "Ndw": "1", "C": (0.75, 0.75), "category": "Strongly deviated"},
+    {"name": r"$\nu$DFSZ", "display_name": "nu-DFSZ", "Ndw": "6", "C": (0.75, 0.75), "category": "DFSZ-like"},
+    {"name": "Majoraxion", "display_name": "Majoraxion", "Ndw": "—", "C": (2.66, 2.66), "category": "Strongly deviated"},
+    {"name": "Composite Axion", "display_name": "Composite Axion", "Ndw": "0/2/6", "C": (1.33, 2.66), "category": "Strongly deviated"},
 ]
 
 categories = {
@@ -80,25 +105,25 @@ categories = {
         {"name": "M82 Decay",             "fn": AxionPhoton.M82_decay},
         {"name": "Irreducible FreezeIn",  "fn": AxionPhoton.IrreducibleFreezeIn}
     ],
-    "Helioscopes": [
+    "Experimental": [
         {"name": "Helioscopes", "fn": AxionPhoton.Helioscopes, "visible": True},
         {"name": "NuSTAR",      "fn": AxionPhoton.NuSTAR_Sun},
-    ],
-    "Dark Matter Axions": [
         {"name": "Haloscopes All",    "fn": AxionPhoton.Haloscopes},
+
+        {"name": "LSW Experiments", "fn": AxionPhoton.LSW},
+        {"name": "Collider Bounds", "fn": AxionPhoton.ColliderBounds},
+    ],
+    "Cosmological": [
         {"name": "Dark Matter Decay", "fn": AxionPhoton.DarkMatterDecay},
     ],
-    "Next-Gen Resonators": [
+    "Sensitivities": [
         {"name": "ABRACADABRA",          "fn": AxionPhoton.ABRACADABRA},
         {"name": "DMRadio",              "fn": AxionPhoton.DMRadio},
         {"name": "SRF Cavities",         "fn": AxionPhoton.SRF},
         {"name": "WISPLC",               "fn": AxionPhoton.WISPLC},
         {"name": "Twisted Anyon Cavity", "fn": AxionPhoton.TwistedAnyonCavity},
     ],
-    "Laboratory Bounds": [
-        {"name": "LSW Experiments", "fn": AxionPhoton.LSW},
-        {"name": "Collider Bounds", "fn": AxionPhoton.ColliderBounds},
-    ],
+
 }
 
 def clean_latex(fig):
@@ -148,7 +173,7 @@ def create_dashboard():
     reset_btn.on_click(reset_callback)
 
     # 2. Sidebar Sections
-    model_checks = {m["name"]: pn.widgets.Checkbox(name=m["name"], value=True) for m in models}
+    model_checks = {m["name"]: pn.widgets.Checkbox(name=m.get("display_name", m["name"]), value=True) for m in models}
     sel_all_mod = pn.widgets.Button(name='Select All', button_type='light', height=30, margin=5)
     sel_no_mod  = pn.widgets.Button(name='Select None', button_type='light', height=30, margin=5)
     
@@ -157,9 +182,28 @@ def create_dashboard():
     sel_all_mod.on_click(lambda e: update_models(e, True))
     sel_no_mod.on_click(lambda e: update_models(e, False))
 
+    # Group models by category
+    model_categories = {}
+    for m in models:
+        cat = m.get("category", "Other")
+        if cat not in model_categories:
+            model_categories[cat] = []
+        model_categories[cat].append(m["name"])
+    
+    # Create accordion for model categories
     model_accordion = pn.Accordion(toggle=True)
-    qcd_col = pn.Column(pn.Column(*model_checks.values(), scroll=True, height=180), pn.Row(sel_all_mod, sel_no_mod))
-    model_accordion.append(("QCD & ALPs", qcd_col))
+    for cat_name in ["KSVZ-like", "DFSZ-like", "Strongly deviated"]:
+        if cat_name in model_categories:
+            cat_checks = [model_checks[name] for name in model_categories[cat_name]]
+            col = pn.Column(*cat_checks, scroll=True, height=100)
+            model_accordion.append((cat_name, col))
+    
+    model_card = pn.Card(
+        model_accordion,
+        pn.Row(sel_all_mod, sel_no_mod),
+        title="QCD Axion Models",
+        collapsed=True
+    )
 
     cat_widgets = {}
     limit_accordion = pn.Accordion(toggle=True)
@@ -174,6 +218,12 @@ def create_dashboard():
         cat_widgets[cat_name] = {"checks": checks, "items": items}
         col = pn.Column(pn.Column(*checks.values(), scroll=True, height=120), pn.Row(b_all, b_no))
         limit_accordion.append((cat_name, col))
+
+    limit_card = pn.Card(
+        limit_accordion,
+        title="Experimental Limits",
+        collapsed=True
+    )
 
     # 3. Plotting
     mpl_pane = pn.pane.Matplotlib(tight=True, dpi=200, format='png', sizing_mode='stretch_width', height=650)
@@ -191,22 +241,70 @@ def create_dashboard():
         ax.set_xlabel(r"$m_a$ [eV]", fontsize=23)
         ax.set_ylabel(r"$|g_{a\gamma}|$ [GeV$^{-1}$]", fontsize=23)
         
-        prop_cycle = plt.rcParams['axes.prop_cycle']
-        colors = prop_cycle.by_key()['color']
+        # Define color palettes and line styles for each category
+        # Unified colorblind-friendly palette for all models
+        # Extended palette with high contrast and colorblind compatibility
+        unified_palette = [
+            '#0173B2',  # Dark Blue
+            '#DE8F05',  # Orange
+            '#CC78BC',  # Magenta
+            '#CA9161',  # Brown
+            '#56B4E9',  # Sky Blue
+            '#1B9E77',  # Teal/Green
+            '#F0E442',  # Yellow
+            '#E84C3D',  # Red
+        ]
+        
+        # Define line styles for each category
+        linestyle_map = {
+            "KSVZ-like": '-',      # Solid
+            "DFSZ-like": '--',     # Dashed
+            "Strongly deviated": '-.',  # Dotted
+        }
+        
+        linewidth_map = {
+            "KSVZ-like": 2.0,
+            "DFSZ-like": 2.0,
+            "Strongly deviated": 2.2,
+        }
+        
         m_grid = np.logspace(np.log10(xlims[0]), np.log10(xlims[1]), 500)
         
-        for i, m in enumerate(models):
-            if model_checks[m["name"]].value:
-                color = colors[i % len(colors)]
-                cmin, cmax = m["C"]
-                if np.isclose(cmin, cmax):
-                    yy = g_agamma(m_grid, cmin)
-                    ax.plot(m_grid, yy, lw=2, alpha=0.9, label=rf"{m['name']}", color=color)
-                else:
-                    y1 = g_agamma(m_grid, cmin); y2 = g_agamma(m_grid, cmax)
-                    ylo, yhi = np.minimum(y1, y2), np.maximum(y1, y2)
-                    ax.fill_between(m_grid, ylo, yhi, alpha=0.3, color=color)
-                    ax.plot(m_grid, np.sqrt(ylo*yhi), lw=1.5, alpha=0.9, label=rf"{m['name']}", color=color)
+        # Plot models grouped by category
+        model_cat_order = ["KSVZ-like", "DFSZ-like", "Strongly deviated"]
+        color_idx = 0
+        for cat_idx, cat_name in enumerate(model_cat_order):
+            models_in_cat = [m for m in models if m.get("category") == cat_name]
+            cat_linestyle = linestyle_map[cat_name]
+            cat_linewidth = linewidth_map[cat_name]
+            
+            # Add separator entry for category (invisible plot for spacing)
+            if cat_idx > 0:
+                ax.plot([], [], ' ', label='')
+            
+            # Add category header with a representative line style
+            ax.plot([], [], linestyle=cat_linestyle, color='black', linewidth=cat_linewidth, label=cat_name)
+            
+            for m in models_in_cat:
+                if model_checks[m["name"]].value:
+                    color = unified_palette[color_idx % len(unified_palette)]
+                    cmin, cmax = m["C"]
+                    label_text = m['name']
+                    
+                    if np.isclose(cmin, cmax):
+                        # Single value - plot as a line
+                        yy = g_agamma(m_grid, cmin)
+                        ax.plot(m_grid, yy, lw=cat_linewidth, alpha=0.9, label=label_text, 
+                               color=color, linestyle=cat_linestyle)
+                    else:
+                        # Range of values - plot as a band without central line
+                        y1 = g_agamma(m_grid, cmin); y2 = g_agamma(m_grid, cmax)
+                        ylo, yhi = np.minimum(y1, y2), np.maximum(y1, y2)
+                        ax.fill_between(m_grid, ylo, yhi, alpha=0.3, color=color)
+                        # Add a thick line in legend to represent the band
+                        ax.plot([], [], lw=cat_linewidth*3, alpha=0.5, label=label_text, 
+                               color=color, linestyle=cat_linestyle)
+                    color_idx += 1
 
         def _plot_bound(fn, kw):
             ox, oy = ax.get_xlim(), ax.get_ylim()
@@ -221,7 +319,18 @@ def create_dashboard():
                 if cat["checks"][it["name"]].value:
                     _plot_bound(it["fn"], it.get("kwargs", {}))
 
-        ax.legend(loc='upper left', bbox_to_anchor=(1.02, 1), fontsize=15, frameon=False, title="Models")
+        # Custom legend with better formatting
+        leg = ax.legend(loc='upper left', bbox_to_anchor=(1.02, 1), fontsize=13, 
+                       frameon=False, title="Theoretical Models", title_fontsize=14)
+        
+        # Format legend: make category headers bold
+        category_names = ["DFSZ-like", "KSVZ-like", "Strongly deviated"]
+        for text in leg.get_texts():
+            label_text = text.get_text()
+            if label_text in category_names:
+                # This is a category header - make it bold
+                text.set_fontweight('bold')
+                text.set_fontsize(13)
         #ax.set_title("Axion–Photon Coupling Space", fontweight="bold", pad=20, fontsize=22)
         clean_latex(fig)
         fig.tight_layout()
@@ -236,8 +345,16 @@ def create_dashboard():
     update_plot(mmin.value, mmax.value, ymin.value, ymax.value)
 
     # 4. DOWNLOAD BUTTON
+    def download_figure():
+        if current_fig[0] is None:
+            return None
+        buffer = io.BytesIO()
+        current_fig[0].savefig(buffer, format='pdf', bbox_inches='tight')
+        buffer.seek(0)
+        return buffer
+    
     download_btn = pn.widgets.FileDownload(
-        callback=lambda: (io.BytesIO(current_fig[0].savefig(io.BytesIO(), format='pdf', bbox_inches='tight') or io.BytesIO().getvalue()) if current_fig[0] else None),
+        callback=download_figure,
         filename="AxionLimits.pdf", 
         button_type="success", 
         label="Download Figure", 
@@ -259,7 +376,7 @@ def create_dashboard():
     # 5. FOOTER (Slim Banner)
     footer = pn.Row(
         pn.pane.Markdown(
-            "© 2025 COSMIC WWISPers. The Axion Limits Explorer was created by Francisco Rodríguez Candón, Francesca Calore and Philip Sørensen. Data and plotting functions are adapted from **[Ciaran O'Hare / AxionLimits](https://github.com/cajohare/AxionLimits)**. More information about the models displayed can be found in the WISP dictionary.",
+            "© 2025 COSMIC WWISPers. The Axion Limits Explorer was created by Francisco Rodríguez Candón, Francesca Lecce and Philip Sørensen. Data and plotting functions are adapted from **[Ciaran O'Hare / AxionLimits](https://github.com/cajohare/AxionLimits)**. More information about the models displayed can be found in the WISP dictionary.",
             styles={'color': '#555', 'font-size': '13px', 'padding-top': '8px'}
         ),
         # FIXED: Moved 'background' into 'styles'
@@ -276,11 +393,9 @@ def create_dashboard():
         pn.Card(ymin, ymax, title="Coupling Range (|gₐᵧ|) [log₁₀ GeV⁻¹]", collapsed=False),
         reset_btn,
         pn.layout.Divider(),
-        pn.pane.Markdown("## Theoretical Models"),
-        model_accordion,
+        model_card,
         pn.layout.Divider(),
-        pn.pane.Markdown("## Experimental Limits"),
-        limit_accordion,
+        limit_card,
         sizing_mode="stretch_width"
     )
 

@@ -6,3 +6,7 @@ panel convert app.py --to pyodide --out docs --title "Axion Limits" --requiremen
 cd docs
 mv app.html index.html
 ```
+```
+python -m http.server
+```
+http://localhost:8000/

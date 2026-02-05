@@ -1245,7 +1245,7 @@ class AxionPhoton():
         FilledLimit(ax,dat,text_label,text_pos=text_pos,col=col,text_col=text_col,fs=fs,zorder=zorder,text_on=text_on,edgealpha=edgealpha,lw=lw,path_effects=line_background(1,'k'))
         return
     
-    def NuSTAR_Sun(ax,text_label=r'\quad {\bf NuSTAR}',text_pos=[1.4e-4,3.5e-11],col='#498c41',text_col='#498c41',fs=12,zorder=-1,text_on=True,edgealpha=1,lw=1.5,rotation=0):
+    def NuSTAR_Sun(ax,text_label=r'{\bf NuSTAR}',text_pos=[1.4e-4,3.5e-11],col='#498c41',text_col='#498c41',fs=12,zorder=-1,text_on=True,edgealpha=1,lw=1.5,rotation=0):
         dat = loadtxt("limit_data/AxionPhoton/NuSTAR_Sun.txt")
         FilledLimit(ax,dat,text_label,text_pos=text_pos,col=col,text_col=text_col,fs=fs,zorder=zorder,text_on=text_on,edgealpha=edgealpha,lw=lw,rotation=rotation)
         return
