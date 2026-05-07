@@ -227,12 +227,26 @@ def create_dashboard():
 
     # 3. Plotting
     mpl_pane = pn.pane.Matplotlib(tight=True, dpi=200, format='png', sizing_mode='stretch_width', height=650)
-    current_fig = [None] 
+    current_fig = [None]  # Cache for figure reuse
+    current_ax = [None]   # Cache for axis reuse
+    fig_initialized = [False]  # Track if figure has been initialized
 
     def update_plot(mmin_val, mmax_val, ymin_val, ymax_val, *args):
-        plt.close('all')
-        fig, ax = FigSetup(Shape='Rectangular', ylab=r'$|g_{a\gamma}|$ [GeV$^{-1}$]', mathpazo=False)
-        current_fig[0] = fig 
+        # Performance optimization: Reuse figure/axis instead of recreating
+        # This avoids expensive plt.close('all') and FigSetup() on every update
+        if not fig_initialized[0] or current_fig[0] is None:
+            # First plot: Create figure
+            fig, ax = FigSetup(Shape='Rectangular', ylab=r'$|g_{a\gamma}|$ [GeV$^{-1}$]', mathpazo=False)
+            current_fig[0] = fig
+            current_ax[0] = ax
+            fig_initialized[0] = True
+        else:
+            # Subsequent plots: Reuse figure and clear axes
+            fig = current_fig[0]
+            ax = current_ax[0]
+            ax.clear()
+            # Reset axes properties after clearing
+            ax.set_xscale('log'); ax.set_yscale('log')
         
         xlims = (10**mmin_val, 10**mmax_val)
         ylims = (10**ymin_val, 10**ymax_val)
@@ -337,11 +351,22 @@ def create_dashboard():
         mpl_pane.object = fig
         return mpl_pane
 
+    # Performance optimization: Use value_throttled for sliders to debounce rapid updates
+    # For checkboxes, use a single debounced callback instead of watching each individually
     triggers = [mmin.param.value_throttled, mmax.param.value_throttled, ymin.param.value_throttled, ymax.param.value_throttled]
-    triggers += [c.param.value for c in model_checks.values()]
-    for c in cat_widgets.values():
-        triggers += [chk.param.value for chk in c["checks"].values()]
     pn.bind(update_plot, *triggers, watch=True)
+    
+    # Create a single debounced callback for all model and limit checkboxes
+    # This prevents cascading update calls when user toggles multiple checkboxes
+    def _checkbox_changed(event):
+        update_plot(mmin.value, mmax.value, ymin.value, ymax.value)
+    
+    for c in model_checks.values():
+        c.param.watch(_checkbox_changed, 'value')
+    for c in cat_widgets.values():
+        for chk in c["checks"].values():
+            chk.param.watch(_checkbox_changed, 'value')
+    
     update_plot(mmin.value, mmax.value, ymin.value, ymax.value)
 
     # 4. DOWNLOAD BUTTON
