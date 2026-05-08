@@ -241,6 +241,14 @@ def prune_out_of_bounds_labels(ax):
             except Exception:
                 pass
 
+def remove_new_figure_labels(fig, existing_figure_texts):
+    for text_obj in list(fig.texts):
+        if text_obj not in existing_figure_texts:
+            try:
+                text_obj.remove()
+            except Exception:
+                pass
+
 # --- DASHBOARD LOGIC ---
 def create_dashboard():
     plt.rcParams.update({
@@ -428,23 +436,14 @@ def create_dashboard():
 
         def _plot_bound(fn, kw):
             ox, oy = ax.get_xlim(), ax.get_ylim()
-            existing_texts = set(ax.texts)
+            existing_figure_texts = set(fig.texts)
             try:
                 try: fn(ax, **kw)
                 except TypeError: fn(ax=ax, **kw)
             except Exception: pass
-            for text_obj in list(ax.texts):
-                if text_obj in existing_texts:
-                    continue
-                try:
-                    x, y = text_obj.get_position()
-                    x = float(x)
-                    y = float(y)
-                except (TypeError, ValueError):
-                    continue
-                if not (min(ox) <= x <= max(ox) and min(oy) <= y <= max(oy)):
-                    text_obj.remove()
             ax.set_xlim(ox); ax.set_ylim(oy)
+            prune_out_of_bounds_labels(ax)
+            remove_new_figure_labels(fig, existing_figure_texts)
 
         for cat in cat_widgets.values():
             for it in cat["items"]:
