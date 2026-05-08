@@ -37,8 +37,16 @@
         <div style="flex:1;min-width:260px">
           <p>The project collects experimental limits and theoretical models for axion-like particles and provides an interactive plotting tool to explore the parameter space (mass vs coupling). The explorer preserves the original visual style while optimising interactivity for web deployment.</p>
           <div style="margin-top:14px" class="cta">
-            <a class="btn" href="./plotter.html" target="_blank" rel="noopener">Open Axion Limits Explorer</a>
+            <button id="embed-toggle" class="btn" type="button">Embed Explorer</button>
+            <a class="btn" id="open-tab" href="./plotter.html" target="_blank" rel="noopener">Open in new tab</a>
             <a class="btn alt" href="https://github.com/francandon/AxionModelsLimits" target="_blank" rel="noopener">View source on GitHub</a>
+          </div>
+          <div id="embed-container" style="display:none;margin-top:12px;">
+            <div id="embed-wrapper" style="position:relative;padding-top:56.25%;background:#f6f8fa;border-radius:8px;overflow:hidden;border:1px solid #e6e6e6;">
+              <iframe id="plotter-iframe" src="./plotter.html" title="Axion Limits Explorer" style="position:absolute;top:0;left:0;width:100%;height:100%;border:0;" loading="lazy"></iframe>
+              <div id="embed-loading" style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(255,255,255,0.85);font-size:16px;color:#333;">Loading explorer…</div>
+            </div>
+            <div id="embed-error" style="display:none;color:#a00;margin-top:8px;">Embedding failed or is blocked by your browser. <a href="./plotter.html" target="_blank" rel="noopener">Open in a new tab</a></div>
           </div>
         </div>
         <div style="width:320px;flex-shrink:0">
@@ -75,5 +83,39 @@
   <footer>
     © 2026 Francisco Rodríguez Candón — Axion Models Limits. Built with Panel & Pyodide. 
   </footer>
+
+  <script>
+  (function(){
+    const toggle = document.getElementById('embed-toggle');
+    const container = document.getElementById('embed-container');
+    const iframe = document.getElementById('plotter-iframe');
+    const loading = document.getElementById('embed-loading');
+    const errorDiv = document.getElementById('embed-error');
+    let timer = null;
+    if(!toggle) return;
+    toggle.addEventListener('click', function(){
+      if(container.style.display==='none' || container.style.display===''){
+        container.style.display='block';
+        errorDiv.style.display='none';
+        iframe.style.display='block';
+        loading.style.display='flex';
+        // start timeout to detect blocked/failed embed
+        timer = setTimeout(function(){ loading.style.display='none'; iframe.style.display='none'; errorDiv.style.display='block'; }, 12000);
+        iframe.onload = function(){
+          clearTimeout(timer);
+          loading.style.display='none';
+          errorDiv.style.display='none';
+        };
+        toggle.textContent='Hide embedded explorer';
+      } else {
+        container.style.display='none';
+        iframe.style.display='none';
+        loading.style.display='none';
+        errorDiv.style.display='none';
+        toggle.textContent='Embed Explorer';
+      }
+    });
+  })();
+  </script>
 </body>
 </html>
