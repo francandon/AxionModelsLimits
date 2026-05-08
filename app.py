@@ -112,6 +112,7 @@ models = [
     {"name": "Composite Axion", "display_name": "Composite Axion", "Ndw": "0/2/6", "C": (1.33, 2.66), "category": "Strongly deviated"},
 ]
 
+# Dynamic categorisation: keep main groups but auto-discover available AxionPhoton plotting methods
 categories = {
     "Astrophysical Bounds": [
         {"name": "Low-Mass Astro",        "fn": AxionPhoton.LowMassAstroBounds},
@@ -121,14 +122,7 @@ categories = {
         {"name": "M82 Decay",             "fn": AxionPhoton.M82_decay},
         {"name": "Irreducible FreezeIn",  "fn": AxionPhoton.IrreducibleFreezeIn}
     ],
-    "Experimental": [
-        {"name": "Helioscopes", "fn": AxionPhoton.Helioscopes, "visible": True},
-        {"name": "NuSTAR",      "fn": AxionPhoton.NuSTAR_Sun},
-        {"name": "Haloscopes All",    "fn": AxionPhoton.Haloscopes},
-
-        {"name": "LSW Experiments", "fn": AxionPhoton.LSW},
-        {"name": "Collider Bounds", "fn": AxionPhoton.ColliderBounds},
-    ],
+    "Experimental": [],
     "Cosmological": [
         {"name": "Dark Matter Decay", "fn": AxionPhoton.DarkMatterDecay},
     ],
@@ -139,8 +133,69 @@ categories = {
         {"name": "WISPLC",               "fn": AxionPhoton.WISPLC},
         {"name": "Twisted Anyon Cavity", "fn": AxionPhoton.TwistedAnyonCavity},
     ],
-
 }
+
+# Populate Experimental group by inspecting AxionPhoton for callable plotting methods
+try:
+    # collect public callables defined on the AxionPhoton class/object
+    api_names = [n for n in dir(AxionPhoton) if not n.startswith('_')]
+    api_callables = []
+    for n in api_names:
+        try:
+            attr = getattr(AxionPhoton, n)
+            if callable(attr):
+                api_callables.append((n, attr))
+        except Exception:
+            continue
+
+    # Keywords -> experimental subgroup mapping (simple heuristics)
+    keyword_map = {
+        'ADMX': 'Haloscopes', 'HAYSTAC': 'Haloscopes', 'RADES': 'Haloscopes', 'ORGAN': 'Haloscopes', 'CAPP': 'Haloscopes',
+        'HALOSCOPE': 'Haloscopes', 'HALOSCOPES': 'Haloscopes',
+        'ABRACADABRA': 'Laboratory', 'ABRACAD': 'Laboratory', 'LSW': 'Laboratory', 'PVLAS': 'Laboratory',
+        'QUAX': 'Haloscopes', 'DMRadio': 'Laboratory', 'MADMAX': 'Laboratory', 'MAD': 'Laboratory',
+        'CAST': 'Helioscopes', 'Helioscope': 'Helioscopes', 'Helioscopes': 'Helioscopes',
+        'NuSTAR': 'Telescopes/X-ray', 'Fermi': 'Telescopes/Gamma', 'INTEGRAL': 'Telescopes/Gamma', 'XMM': 'Telescopes/X-ray', 'Chandra': 'Telescopes/X-ray',
+        'SN': 'Supernovae', 'SN1987A': 'Supernovae', 'Supernova': 'Supernovae', 'M82': 'Astrophysical', 'NeutronStars': 'Astrophysical',
+        'Collider': 'Collider', 'LEP': 'Collider', 'LHC': 'Collider', 'ATLAS': 'Collider', 'CMS': 'Collider', 'BaBar': 'Collider', 'Belle': 'Collider',
+        'Projections': 'Projections', 'Projected': 'Projections'
+    }
+
+    # Human-readable name function
+    def humanize(name):
+        # insert spaces before capitals and underscores
+        s = re.sub(r'(?<!^)(?=[A-Z0-9])', ' ', name)
+        s = s.replace('_', ' ')
+        return s.strip()
+
+    # Already included names to avoid duplicates
+    existing = set()
+    for grp in categories.values():
+        for item in grp:
+            existing.add(item.get('name'))
+
+    for n, fn in sorted(api_callables):
+        # skip high-level helpers already in categories
+        display = humanize(n)
+        if display in existing:
+            continue
+        # decide target group
+        target = None
+        nl = n.lower()
+        for k, grp in keyword_map.items():
+            if k.lower() in nl:
+                target = grp
+                break
+        if target is None:
+            # default to Experimental
+            target = 'Experimental'
+        # append to corresponding categories key (create subgroup as needed)
+        if target not in categories:
+            categories[target] = []
+        categories[target].append({'name': display, 'fn': fn})
+except Exception:
+    # If introspection fails (pyodide or import race), keep static list and continue
+    pass
 
 def clean_latex(fig):
     for text_obj in fig.findobj(matplotlib.text.Text):
