@@ -163,9 +163,15 @@ try:
 
     # Human-readable name function
     def humanize(name):
-        # insert spaces before capitals and underscores
-        s = re.sub(r'(?<!^)(?=[A-Z0-9])', ' ', name)
-        s = s.replace('_', ' ')
+        # Prefer keeping acronyms together and split CamelCase sensibly.
+        s = name.replace('_', ' ')
+        # If string is all caps (acronym-like) or digits, keep as-is (just normalize spaces)
+        if re.match(r'^[A-Z0-9 \-]+$', name):
+            return ' '.join(s.split())
+        # Insert space between a lowercase/digit and uppercase letter (camelCase -> camel Case)
+        s = re.sub(r'([a-z0-9])([A-Z])', r'\1 \2', s)
+        # Normalize multiple spaces
+        s = ' '.join(s.split())
         return s.strip()
 
     # Already included names to avoid duplicates
