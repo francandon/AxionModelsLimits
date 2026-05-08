@@ -19,6 +19,13 @@
     footer{color:var(--muted);font-size:14px;padding:28px 20px;text-align:center}
     @media (max-width:640px){header{padding:28px 12px}.cta{flex-direction:column;align-items:stretch}}
   </style>
+<script>
+window.MathJax = {
+  tex: {inlineMath: [['\\(','\\)'], ['$', '$']], displayMath: [['\\[','\\]'], ['$$','$$']]},
+  svg: {fontCache: 'global'}
+};
+</script>
+<script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js"></script>
 </head>
 <body>
   <header>
@@ -69,23 +76,25 @@
 
       <h4>Symbols</h4>
       <ul>
-        <li><strong>g<sub>aγγ</sub></strong> — axion–photon coupling</li>
-        <li><strong>g<sub>a f̄ f</sub></strong> — axion–fermion coupling (for fermion f)</li>
-        <li><strong>N<sub>DW</sub></strong> — domain-wall number</li>
-        <li><strong>C_{aγγ}, C_{a\bar p p}, C_{a\bar n n}, C_{a\bar e e}</strong> — dimensionless model-dependent coefficients</li>
+        <li><strong>\(g_{a\gamma\gamma}\)</strong> — axion–photon coupling</li>
+        <li><strong>\(g_{a\bar f f}\)</strong> — axion–fermion coupling (for fermion \(f\))</li>
+        <li><strong>\(N_{\rm DW}\)</strong> — domain-wall number</li>
+        <li><strong>\(C_{a\gamma\gamma},\; C_{a\bar p p},\; C_{a\bar n n},\; C_{a\bar e e}\)</strong> — dimensionless model-dependent coefficients</li>
       </ul>
 
       <h4>Parametrisation (EFT)</h4>
-      <pre style="background:#f7f7f9;padding:12px;border-radius:6px;overflow:auto;">L ⊃ 1/4 g_{aγγ} F \tilde{F} - i g_{a\bar f f} \bar f γ_5 f - (i/2) g_d a \bar n σ_{μν} γ_5 n F^{μν}
+      <p>The effective Lagrangian used is:</p>
+      <div style="background:#f7f7f9;padding:12px;border-radius:6px;overflow:auto;">
+        \[ \mathcal{L} \supset \tfrac{1}{4} g_{a\gamma\gamma} F \\tilde{F} - i g_{a\bar f f} \\bar f \\gamma_5 f - \\tfrac{i}{2} g_d a \\bar n \\sigma_{\\mu\\nu} \\gamma_5 n F^{\\mu\\nu} \]
 
-g_{aγγ} = (α / 2π) (C_{aγγ} / f_a),   g_{a\bar f f} = C_{a\bar f f} (m_f / f_a),   g_d = C_{anf} / (m_n f_a)
-      </pre>
+        \[ g_{a\gamma\gamma} = \frac{\alpha}{2\pi} \frac{C_{a\gamma\gamma}}{f_a}, \quad g_{a\bar f f} = C_{a\bar f f} \frac{m_f}{f_a}, \quad g_d = \frac{C_{anf}}{m_n f_a} \]
+      </div>
 
       <h4>Representative models (short)</h4>
       <p>Values shown are the dimensionless C coefficients or quoted ranges from the literature.</p>
       <table style="width:100%;border-collapse:collapse;margin-top:8px">
         <thead>
-          <tr style="text-align:left;border-bottom:1px solid #ddd"><th>Model</th><th>W</th><th>N<sub>DW</sub></th><th>C<sub>aγγ</sub></th><th>C<sub>ap</sub></th><th>C<sub>an</sub></th><th>C<sub>ae</sub></th></tr>
+          <tr style="text-align:left;border-bottom:1px solid #ddd"><th>Model</th><th>W</th><th>\(N_{\rm DW}\)</th><th>\(C_{a\gamma\gamma}\)</th><th>\(C_{ap}\)</th><th>\(C_{an}\)</th><th>\(C_{ae}\)</th></tr>
         </thead>
         <tbody>
           <tr><td>KSVZ</td><td>12</td><td>1</td><td>-1.92</td><td>-0.47</td><td>-0.02</td><td>~2×10<sup>-4</sup></td></tr>
