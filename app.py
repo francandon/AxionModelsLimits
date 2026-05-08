@@ -20,7 +20,7 @@ pn.config.raw_css.append("""
     gap: 15px;
     align-items: center;
 }
-/* Style main collapsible cards (QCD Axion Models, Experimental Limits) */
+/* Style main collapsible cards (QCD Axion Models, Bounds and Sensitivities) */
 .pn-card > .card > .card-header {
     background-color: #1B3B5A !important;
     color: white !important;
@@ -114,28 +114,56 @@ models = [
 
 # Dynamic categorisation: keep main groups but auto-discover available AxionPhoton plotting methods
 categories = {
-    "Astrophysical Bounds": [
-        {"name": "Low-Mass Astro",        "fn": AxionPhoton.LowMassAstroBounds},
-        {"name": "White Dwarfs",          "fn": AxionPhoton.WhiteDwarfs},
-        {"name": "Stellar Bounds",        "fn": AxionPhoton.StellarBounds},
-        {"name": "Supernova 1987A",      "fn": AxionPhoton.SN1987A_gamma},
-        {"name": "M82 Decay",             "fn": AxionPhoton.M82_decay},
-        {"name": "Irreducible FreezeIn",  "fn": AxionPhoton.IrreducibleFreezeIn}
-    ],
-    "Experimental": [],
-    "Cosmological": [
-        {"name": "Dark Matter Decay", "fn": AxionPhoton.DarkMatterDecay},
-    ],
-    "Sensitivities": [
-        {"name": "ABRACADABRA",          "fn": AxionPhoton.ABRACADABRA},
-        {"name": "DMRadio",              "fn": AxionPhoton.DMRadio},
-        {"name": "SRF Cavities",         "fn": AxionPhoton.SRF},
-        {"name": "WISPLC",               "fn": AxionPhoton.WISPLC},
-        {"name": "Twisted Anyon Cavity", "fn": AxionPhoton.TwistedAnyonCavity},
-    ],
+    "Astrophysical Sources": {
+        "Stellar Evolution": [
+            {"name": "Low-Mass Astro", "fn": AxionPhoton.LowMassAstroBounds},
+            {"name": "Stellar Bounds", "fn": AxionPhoton.StellarBounds},
+            {"name": "White Dwarfs", "fn": AxionPhoton.WhiteDwarfs},
+        ],
+        "Supernovae and Transients": [
+            {"name": "Supernova 1987A", "fn": AxionPhoton.SN1987A_gamma},
+            {"name": "M82 Decay", "fn": AxionPhoton.M82_decay},
+        ],
+        "Compact Objects and High-Energy Sky": [],
+    },
+    "Cosmology and Diffuse Backgrounds": {
+        "Dark Matter and Background Light": [
+            {"name": "Dark Matter Decay", "fn": AxionPhoton.DarkMatterDecay},
+        ],
+        "Early Universe and Diffuse Media": [
+            {"name": "Irreducible FreezeIn", "fn": AxionPhoton.IrreducibleFreezeIn},
+        ],
+    },
+    "Haloscopes and Resonators": {
+        "Combined Haloscope Bounds": [
+            {"name": "Haloscopes All", "fn": AxionPhoton.Haloscopes, "visible": True},
+        ],
+        "Cavity Haloscopes": [],
+        "Broadband and Low-Frequency Searches": [],
+        "Future Haloscope Concepts": [],
+    },
+    "Helioscopes": {
+        "Solar Axion Searches": [
+            {"name": "Helioscopes", "fn": AxionPhoton.Helioscopes, "visible": True},
+        ],
+    },
+    "Laboratory and Precision Searches": {
+        "Light Shining Through Walls": [
+            {"name": "LSW Experiments", "fn": AxionPhoton.LSW},
+        ],
+        "Polarimetry and Precision Probes": [],
+        "Other Laboratory Searches": [],
+    },
+    "Colliders and Beam Dumps": {
+        "Combined Collider Bounds": [
+            {"name": "Collider Bounds", "fn": AxionPhoton.ColliderBounds},
+        ],
+        "Collider Searches": [],
+        "Beam Dumps and Fixed Targets": [],
+    },
 }
 
-# Populate Experimental group by inspecting AxionPhoton for callable plotting methods
+# Populate source/experiment groups by inspecting AxionPhoton for callable plotting methods
 try:
     # collect public callables defined on the AxionPhoton class/object
     api_names = [n for n in dir(AxionPhoton) if not n.startswith('_')]
@@ -148,18 +176,61 @@ try:
         except Exception:
             continue
 
-    # Keywords -> experimental subgroup mapping (simple heuristics)
-    keyword_map = {
-        'ADMX': 'Haloscopes', 'HAYSTAC': 'Haloscopes', 'RADES': 'Haloscopes', 'ORGAN': 'Haloscopes', 'CAPP': 'Haloscopes',
-        'HALOSCOPE': 'Haloscopes', 'HALOSCOPES': 'Haloscopes',
-        'ABRACADABRA': 'Laboratory', 'ABRACAD': 'Laboratory', 'LSW': 'Laboratory', 'PVLAS': 'Laboratory',
-        'QUAX': 'Haloscopes', 'DMRadio': 'Laboratory', 'MADMAX': 'Laboratory', 'MAD': 'Laboratory',
-        'CAST': 'Helioscopes', 'Helioscope': 'Helioscopes', 'Helioscopes': 'Helioscopes',
-        'NuSTAR': 'Telescopes/X-ray', 'Fermi': 'Telescopes/Gamma', 'INTEGRAL': 'Telescopes/Gamma', 'XMM': 'Telescopes/X-ray', 'Chandra': 'Telescopes/X-ray',
-        'SN': 'Supernovae', 'SN1987A': 'Supernovae', 'Supernova': 'Supernovae', 'M82': 'Astrophysical', 'NeutronStars': 'Astrophysical',
-        'Collider': 'Collider', 'LEP': 'Collider', 'LHC': 'Collider', 'ATLAS': 'Collider', 'CMS': 'Collider', 'BaBar': 'Collider', 'Belle': 'Collider',
-        'Projections': 'Projections', 'Projected': 'Projections'
-    }
+    category_rules = [
+        ("Colliders and Beam Dumps", "Beam Dumps and Fixed Targets", [
+            "beamdump", "mini", "nomad", "gluex", "primex",
+        ]),
+        ("Colliders and Beam Dumps", "Collider Searches", [
+            "atlas", "cms", "lhc", "lep", "babar", "belle", "besiii", "opal",
+            "collider",
+        ]),
+        ("Helioscopes", "Solar Axion Searches", [
+            "helioscope", "helioscopes", "cast", "iaxo",
+        ]),
+        ("Haloscopes and Resonators", "Cavity Haloscopes", [
+            "admx", "rbf", "haystac", "taseh", "capp", "quax",
+            "organ", "rades", "grahal", "base",
+        ]),
+        ("Haloscopes and Resonators", "Broadband and Low-Frequency Searches", [
+            "abracad", "dmradio", "srf", "wisplc", "upload", "lida",
+        ]),
+        ("Haloscopes and Resonators", "Future Haloscope Concepts", [
+            "madmax", "dali", "alpha", "flash", "cadex", "brass", "bread",
+            "toorad", "lampost", "twistedanyoncavity",
+        ]),
+        ("Haloscopes and Resonators", "Combined Haloscope Bounds", [
+            "haloscope", "haloscopes",
+        ]),
+        ("Laboratory and Precision Searches", "Light Shining Through Walls", [
+            "alps", "lsw", "osqar", "crows", "sapphires", "wispfi",
+        ]),
+        ("Laboratory and Precision Searches", "Polarimetry and Precision Probes", [
+            "pvlas", "dance", "aligo", "supermag",
+        ]),
+        ("Laboratory and Precision Searches", "Other Laboratory Searches", [
+            "adbc", "shaft",
+        ]),
+        ("Cosmology and Diffuse Backgrounds", "Dark Matter and Background Light", [
+            "darkmatterdecay", "alpdecay", "planck", "cobe", "firas", "cmb",
+            "cosmicbackground",
+            "bicep", "polarbear", "mojave", "spt", "ppta", "quijote", "ppa",
+        ]),
+        ("Cosmology and Diffuse Backgrounds", "Early Universe and Diffuse Media", [
+            "bbn", "diffuse", "ionisation", "freeze",
+        ]),
+        ("Astrophysical Sources", "Supernovae and Transients", [
+            "fermi", "sn", "sne", "gw", "typeic", "m82", "theseus",
+        ]),
+        ("Astrophysical Sources", "Stellar Evolution", [
+            "globular", "white", "solar", "star", "stars", "mwd", "stab",
+        ]),
+        ("Astrophysical Sources", "Compact Objects and High-Energy Sky", [
+            "hydra", "m87", "hess", "mrk", "magic", "hawc", "chandra",
+            "ngc", "h182", "nustar", "xmm", "integral", "xray", "xrays",
+            "pulsar", "neutron", "muse", "jwst", "winered", "hst", "desi",
+            "vimos", "gamma", "leot", "erosita", "axionstar",
+        ]),
+    ]
 
     # Human-readable name function
     def humanize(name):
@@ -176,29 +247,37 @@ try:
 
     # Already included names to avoid duplicates
     existing = set()
-    for grp in categories.values():
-        for item in grp:
-            existing.add(item.get('name'))
+    existing_fns = set()
+    for subgroups in categories.values():
+        for items in subgroups.values():
+            for item in items:
+                existing.add(item.get('name'))
+                existing_fns.add(item.get('fn'))
 
     for n, fn in sorted(api_callables):
+        if n in {"QCDAxion"}:
+            continue
         # skip high-level helpers already in categories
         display = humanize(n)
-        if display in existing:
+        if display in existing or fn in existing_fns:
             continue
         # decide target group
-        target = None
         nl = n.lower()
-        for k, grp in keyword_map.items():
-            if k.lower() in nl:
-                target = grp
+        target_group = "Other Bounds"
+        target_subgroup = "Uncategorized"
+        for grp, subgroup, keywords in category_rules:
+            if any(keyword in nl for keyword in keywords):
+                target_group = grp
+                target_subgroup = subgroup
                 break
-        if target is None:
-            # default to Experimental
-            target = 'Experimental'
         # append to corresponding categories key (create subgroup as needed)
-        if target not in categories:
-            categories[target] = []
-        categories[target].append({'name': display, 'fn': fn})
+        if target_group not in categories:
+            categories[target_group] = {}
+        if target_subgroup not in categories[target_group]:
+            categories[target_group][target_subgroup] = []
+        categories[target_group][target_subgroup].append({'name': display, 'fn': fn})
+        existing.add(display)
+        existing_fns.add(fn)
 except Exception:
     # If introspection fails (pyodide or import race), keep static list and continue
     pass
@@ -267,8 +346,8 @@ def create_dashboard():
     # 1. Widgets (Compact)
     DEFAULTS = {'mmin': -8, 'mmax': 2, 'ymin': -16, 'ymax': -8}
 
-    mmin = pn.widgets.FloatSlider(name='Min', start=-15, end=8, step=0.5, value=DEFAULTS['mmin'])
-    mmax = pn.widgets.FloatSlider(name='Max', start=-15, end=8, step=0.5, value=DEFAULTS['mmax'])
+    mmin = pn.widgets.FloatSlider(name='Min', start=-15, end=12, step=0.5, value=DEFAULTS['mmin'])
+    mmax = pn.widgets.FloatSlider(name='Max', start=-15, end=12, step=0.5, value=DEFAULTS['mmax'])
     
     ymin = pn.widgets.FloatSlider(name='Min', start=-30, end=-5, step=0.5, value=DEFAULTS['ymin'])
     ymax = pn.widgets.FloatSlider(name='Max', start=-30, end=-5, step=0.5, value=DEFAULTS['ymax'])
@@ -278,12 +357,14 @@ def create_dashboard():
         mmin.value = DEFAULTS['mmin']; mmax.value = DEFAULTS['mmax']
         ymin.value = DEFAULTS['ymin']; ymax.value = DEFAULTS['ymax']
         for chk in model_checks.values(): chk.value = True
-        for cat_name, cat in cat_widgets.items():
-            for name, chk in cat["checks"].items():
-                is_visible = False
-                for item in categories[cat_name]:
-                    if item["name"] == name and item.get("visible"): is_visible = True
-                chk.value = is_visible
+        for cat in cat_widgets.values():
+            for subgroup in cat["subgroups"].values():
+                for name, chk in subgroup["checks"].items():
+                    is_visible = False
+                    for item in subgroup["items"]:
+                        if item["name"] == name and item.get("visible"):
+                            is_visible = True
+                    chk.value = is_visible
     reset_btn.on_click(reset_callback)
 
     # 2. Sidebar Sections
@@ -321,21 +402,29 @@ def create_dashboard():
 
     cat_widgets = {}
     limit_accordion = pn.Accordion(toggle=True)
-    for cat_name, items in categories.items():
-        checks = {it["name"]: pn.widgets.Checkbox(name=it["name"], value=it.get("visible", False)) for it in items}
-        b_all = pn.widgets.Button(name='All', button_type='light', height=30, margin=2)
-        b_no  = pn.widgets.Button(name='None', button_type='light', height=30, margin=2)
-        def make_callback(c_dict, state):
-            return lambda e: [setattr(w, 'value', state) for w in c_dict.values()]
-        b_all.on_click(make_callback(checks, True))
-        b_no.on_click(make_callback(checks, False))
-        cat_widgets[cat_name] = {"checks": checks, "items": items}
-        col = pn.Column(pn.Column(*checks.values(), scroll=True, height=120), pn.Row(b_all, b_no))
-        limit_accordion.append((cat_name, col))
+    def make_callback(c_dict, state):
+        return lambda e: [setattr(w, 'value', state) for w in c_dict.values()]
+
+    for cat_name, subgroups in categories.items():
+        sub_accordion = pn.Accordion(toggle=True)
+        cat_widgets[cat_name] = {"subgroups": {}}
+        for subgroup_name, items in subgroups.items():
+            if not items:
+                continue
+            checks = {it["name"]: pn.widgets.Checkbox(name=it["name"], value=it.get("visible", False)) for it in items}
+            b_all = pn.widgets.Button(name='All', button_type='light', height=30, margin=2)
+            b_no  = pn.widgets.Button(name='None', button_type='light', height=30, margin=2)
+            b_all.on_click(make_callback(checks, True))
+            b_no.on_click(make_callback(checks, False))
+            cat_widgets[cat_name]["subgroups"][subgroup_name] = {"checks": checks, "items": items}
+            sub_col = pn.Column(pn.Column(*checks.values(), scroll=True, height=120), pn.Row(b_all, b_no))
+            sub_accordion.append((subgroup_name, sub_col))
+        if cat_widgets[cat_name]["subgroups"]:
+            limit_accordion.append((cat_name, sub_accordion))
 
     limit_card = pn.Card(
         limit_accordion,
-        title="Experimental Limits",
+        title="Bounds and Sensitivities",
         collapsed=True
     )
 
@@ -446,9 +535,10 @@ def create_dashboard():
             remove_new_figure_labels(fig, existing_figure_texts)
 
         for cat in cat_widgets.values():
-            for it in cat["items"]:
-                if cat["checks"][it["name"]].value:
-                    _plot_bound(it["fn"], it.get("kwargs", {}))
+            for subgroup in cat["subgroups"].values():
+                for it in subgroup["items"]:
+                    if subgroup["checks"][it["name"]].value:
+                        _plot_bound(it["fn"], it.get("kwargs", {}))
 
         # Custom legend with better formatting
         leg = ax.legend(loc='upper left', bbox_to_anchor=(1.02, 1), fontsize=13, 
@@ -483,8 +573,9 @@ def create_dashboard():
     for c in model_checks.values():
         c.param.watch(_checkbox_changed, 'value')
     for c in cat_widgets.values():
-        for chk in c["checks"].values():
-            chk.param.watch(_checkbox_changed, 'value')
+        for subgroup in c["subgroups"].values():
+            for chk in subgroup["checks"].values():
+                chk.param.watch(_checkbox_changed, 'value')
     
     update_plot(mmin.value, mmax.value, ymin.value, ymax.value)
 
