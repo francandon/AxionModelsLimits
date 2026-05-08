@@ -73,9 +73,25 @@ import numpy as np
 
 try:
     from PlotFuncs import FigSetup, AxionPhoton
-except ImportError:
-    def AxionPhoton(*args): pass
-    def FigSetup(*args, **kwargs): return plt.subplots()
+except Exception as _import_err:
+    # Minimal safe fallbacks to avoid hard crashes during pyodide startup
+    def AxionPhoton(*args, **kwargs):
+        return None
+    def FigSetup(*args, **kwargs):
+        return plt.subplots()
+    # Try to recover: if PlotFuncs was extracted after the first import attempt,
+    # import it dynamically and pick up real implementations if available.
+    try:
+        import importlib
+        PF = importlib.import_module('PlotFuncs')
+        if hasattr(PF, 'AxionPhoton'):
+            AxionPhoton = getattr(PF, 'AxionPhoton')
+        if hasattr(PF, 'FigSetup'):
+            FigSetup = getattr(PF, 'FigSetup')
+    except Exception:
+        # If recovery fails, keep the safe fallbacks and continue; detailed
+        # errors will appear in the browser console for debugging.
+        pass
 
 # --- PHYSICS ---
 alpha = 1/137.035999084
