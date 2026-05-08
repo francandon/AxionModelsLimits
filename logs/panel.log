@@ -6,3 +6,6 @@
 2026-05-08 12:48:58,461 ServerConnection created
 2026-05-08 12:54:14,265 405 HEAD /app (127.0.0.1) 0.57ms
 2026-05-08 12:55:14,177 405 HEAD /app (127.0.0.1) 0.89ms
+2026-05-08 12:56:30,944 WebSocket connection closed: code=1001, reason=None
+2026-05-08 12:56:31,123 WebSocket connection opened
+2026-05-08 12:56:31,123 ServerConnection created
