@@ -151,6 +151,35 @@ def clean_latex(fig):
             text_obj.set_text(s_clean)
             text_obj.set_weight('bold')
 
+# Remove text labels that fall outside the currently visible data limits.
+# Many plotting routines call ax.text(...) directly; this helper attempts
+# to map each Text object's position back into data coordinates and removes
+# the label if it lies outside the current x/y limits.
+def prune_out_of_bounds_labels(ax):
+    try:
+        x0, x1 = ax.get_xlim()
+        y0, y1 = ax.get_ylim()
+    except Exception:
+        return
+    # Iterate over a copy because we may remove items while iterating
+    for text_obj in list(ax.texts):
+        try:
+            pos = text_obj.get_position()
+            trans = text_obj.get_transform()
+            # Transform the text position into display coordinates, then into data coords
+            display_coords = trans.transform(pos)
+            data_coords = ax.transData.inverted().transform(display_coords)
+            xdata, ydata = data_coords[0], data_coords[1]
+        except Exception:
+            # If transform mapping fails (non-data coordinates), keep the label
+            continue
+        # If outside visible range, remove the text object
+        if (xdata < x0) or (xdata > x1) or (ydata < y0) or (ydata > y1):
+            try:
+                text_obj.remove()
+            except Exception:
+                pass
+
 # --- DASHBOARD LOGIC ---
 def create_dashboard():
     plt.rcParams.update({
@@ -362,6 +391,8 @@ def create_dashboard():
                 text.set_fontweight('bold')
                 text.set_fontsize(13)
         #ax.set_title("Axion–Photon Coupling Space", fontweight="bold", pad=20, fontsize=22)
+        # Remove labels that are outside the selected mass / coupling ranges
+        prune_out_of_bounds_labels(ax)
         clean_latex(fig)
         fig.tight_layout()
         mpl_pane.object = fig

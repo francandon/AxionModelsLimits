@@ -22,18 +22,29 @@
 </head>
 <body>
   <header>
-    <div class="container">
-      <h1>Axion Models Limits</h1>
-      <p class="lead">Interactive explorer for axion–photon coupling limits, experiment compilations and theoretical model bands. Fast, modern and browser-friendly.</p>
+    <div class="container" style="display:flex;align-items:center;gap:16px;">
+      <img src="assets/logo_WISP.jpg" alt="Logo" style="height:64px;border-radius:6px;object-fit:contain;">
+      <div>
+        <h1 style="margin:0">Axion Models Limits</h1>
+        <p class="lead">Interactive explorer for axion–photon coupling limits, experiment compilations and theoretical model bands. Fast, modern and browser-friendly.</p>
+      </div>
     </div>
   </header>
   <main class="container">
     <section class="card">
       <h2>About</h2>
-      <p>The project collects experimental limits and theoretical models for axion-like particles and provides an interactive plotting tool to explore the parameter space (mass vs coupling). The explorer preserves the original visual style while optimising interactivity for web deployment.</p>
-      <div style="margin-top:14px" class="cta">
-        <a class="btn" href="./plotter.html" target="_blank" rel="noopener">Open Axion Limits Explorer</a>
-        <a class="btn alt" href="https://github.com/francandon/AxionModelsLimits" target="_blank" rel="noopener">View source on GitHub</a>
+      <div style="display:flex;gap:16px;align-items:flex-start;flex-wrap:wrap;">
+        <div style="flex:1;min-width:260px">
+          <p>The project collects experimental limits and theoretical models for axion-like particles and provides an interactive plotting tool to explore the parameter space (mass vs coupling). The explorer preserves the original visual style while optimising interactivity for web deployment.</p>
+          <div style="margin-top:14px" class="cta">
+            <a class="btn" href="./plotter.html" target="_blank" rel="noopener">Open Axion Limits Explorer</a>
+            <a class="btn alt" href="https://github.com/francandon/AxionModelsLimits" target="_blank" rel="noopener">View source on GitHub</a>
+          </div>
+        </div>
+        <div style="width:320px;flex-shrink:0">
+          <img src="assets/screenshot.png" alt="Axion Limits Explorer screenshot" style="width:100%;border-radius:8px;box-shadow:0 6px 18px rgba(16,24,40,0.08)">
+          <p style="font-size:12px;color:#666;margin-top:8px;">Screenshot of the interactive explorer (upload to /assets as screenshot.png).</p>
+        </div>
       </div>
     </section>
 
