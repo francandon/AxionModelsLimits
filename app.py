@@ -20,30 +20,176 @@ pn.config.raw_css.append("""
     gap: 15px;
     align-items: center;
 }
-/* Style main collapsible cards (QCD Axion Models, Bounds and Sensitivities) */
-.pn-card > .card > .card-header {
-    background-color: #1B3B5A !important;
-    color: white !important;
-    font-weight: bold;
+.controls-shell {
+    background: #f7f9fc;
+    border-right: 1px solid #dfe6ef;
+    padding: 16px 14px 24px;
 }
-.pn-card > .card > .card-header button {
-    color: white !important;
+.controls-title {
+    color: #173652;
+    font-size: 1.2rem;
+    font-weight: 700;
+    letter-spacing: 0;
+    margin: 0 0 3px;
 }
-/* Style category accordion tabs inside cards - lighter background */
-.card .nav-tabs .nav-link {
-    background-color: #f5f5f5 !important;
-    border-color: #ddd !important;
-    color: #333 !important;
+.controls-subtitle {
+    color: #66758a;
+    font-size: 0.82rem;
+    line-height: 1.35;
+    margin-bottom: 12px;
 }
-.card .nav-tabs .nav-link:hover {
-    background-color: #e8e8e8 !important;
+.control-panel {
+    background: #ffffff;
+    border: 1px solid #dde5ef;
+    border-radius: 12px;
+    box-shadow: 0 8px 22px rgba(27, 59, 90, 0.07);
+    margin: 0 0 12px;
+    padding: 14px;
 }
-.card .nav-tabs .nav-link.active {
-    background-color: #ffffff !important;
+.control-panel-title {
+    color: #173652;
+    font-size: 0.92rem;
+    font-weight: 700;
+    margin-bottom: 2px;
+}
+.control-panel-caption {
+    color: #718096;
+    font-size: 0.76rem;
+    line-height: 1.35;
+    margin-bottom: 10px;
+}
+.range-group {
+    border-top: 1px solid #edf1f6;
+    margin-top: 10px;
+    padding-top: 10px;
+}
+.range-heading {
+    color: #314760;
+    font-size: 0.84rem;
+    font-weight: 700;
+    margin-bottom: 4px;
+}
+.control-panel .bk-input-group,
+.checklist-panel .bk-input-group {
+    margin-bottom: 6px !important;
+}
+.control-panel label,
+.checklist-panel label {
+    color: #2b3543 !important;
+    font-size: 0.86rem !important;
+    font-weight: 500 !important;
+}
+.control-panel input[type="range"] {
+    accent-color: #1B3B5A;
+}
+.checklist-panel input[type="checkbox"] {
+    accent-color: #1B3B5A;
+    height: 15px;
+    width: 15px;
+}
+.reset-control .bk-btn,
+.reset-control .btn,
+.bulk-action .bk-btn,
+.bulk-action .btn {
+    border-radius: 9px !important;
+    font-weight: 650 !important;
+}
+.reset-control .bk-btn,
+.reset-control .btn {
+    background: #1B3B5A !important;
     border-color: #1B3B5A !important;
-    border-bottom-color: #ffffff !important;
-    color: #1B3B5A !important;
-    font-weight: 500;
+    color: #ffffff !important;
+    box-shadow: 0 7px 16px rgba(27, 59, 90, 0.18);
+}
+.reset-control .bk-btn:hover,
+.reset-control .btn:hover {
+    background: #244967 !important;
+    border-color: #244967 !important;
+}
+.bulk-action .bk-btn,
+.bulk-action .btn {
+    background: #f3f6fa !important;
+    border: 1px solid #d9e2ec !important;
+    color: #24364a !important;
+}
+.bulk-action .bk-btn:hover,
+.bulk-action .btn:hover {
+    background: #e7edf5 !important;
+}
+.modern-card.pn-card,
+.modern-card .card {
+    background: transparent !important;
+    border: 0 !important;
+    box-shadow: none !important;
+    margin: 0 0 12px !important;
+}
+.modern-card > .card > .card-header,
+.modern-card .card-header {
+    background: #ffffff !important;
+    border: 1px solid #dde5ef !important;
+    border-radius: 12px !important;
+    box-shadow: 0 8px 22px rgba(27, 59, 90, 0.07);
+    color: #173652 !important;
+    font-size: 0.94rem !important;
+    font-weight: 750 !important;
+    padding: 11px 13px !important;
+}
+.modern-card > .card > .card-header button,
+.modern-card .card-header button {
+    color: #173652 !important;
+    font-weight: 750 !important;
+}
+.modern-card > .card > .card-body,
+.modern-card .card-body {
+    background: #ffffff !important;
+    border: 1px solid #dde5ef !important;
+    border-radius: 0 0 12px 12px !important;
+    border-top: 0 !important;
+    box-shadow: 0 8px 22px rgba(27, 59, 90, 0.06);
+    padding: 10px !important;
+}
+.modern-accordion .accordion-item,
+.modern-accordion .card {
+    border: 1px solid #e1e7ef !important;
+    border-radius: 10px !important;
+    box-shadow: none !important;
+    margin-bottom: 8px !important;
+    overflow: hidden;
+}
+.modern-accordion .accordion-button,
+.modern-accordion .card-header {
+    background: #f8fafc !important;
+    color: #24364a !important;
+    font-size: 0.84rem !important;
+    font-weight: 700 !important;
+    padding: 9px 10px !important;
+}
+.modern-accordion .accordion-button:not(.collapsed),
+.modern-accordion .card-header:has(.active) {
+    background: #eef5fb !important;
+    color: #173652 !important;
+}
+.modern-accordion .accordion-body,
+.modern-accordion .card-body {
+    padding: 8px 10px 10px !important;
+}
+.subgroup-accordion .accordion-button,
+.subgroup-accordion .card-header {
+    background: #ffffff !important;
+    color: #405166 !important;
+    font-size: 0.8rem !important;
+    padding: 8px 9px !important;
+}
+.checklist-panel {
+    background: #ffffff;
+}
+.checklist-scroll {
+    border-bottom: 1px solid #edf1f6;
+    padding-bottom: 4px;
+}
+.control-divider {
+    background: #dce4ee;
+    margin: 10px 0 14px;
 }
 """)
 
@@ -346,13 +492,20 @@ def create_dashboard():
     # 1. Widgets (Compact)
     DEFAULTS = {'mmin': -8, 'mmax': 2, 'ymin': -16, 'ymax': -8}
 
-    mmin = pn.widgets.FloatSlider(name='Min', start=-15, end=12, step=0.5, value=DEFAULTS['mmin'])
-    mmax = pn.widgets.FloatSlider(name='Max', start=-15, end=12, step=0.5, value=DEFAULTS['mmax'])
+    mmin = pn.widgets.FloatSlider(name='Min', start=-15, end=12, step=0.5, value=DEFAULTS['mmin'], bar_color="#1B3B5A")
+    mmax = pn.widgets.FloatSlider(name='Max', start=-15, end=12, step=0.5, value=DEFAULTS['mmax'], bar_color="#1B3B5A")
     
-    ymin = pn.widgets.FloatSlider(name='Min', start=-30, end=-5, step=0.5, value=DEFAULTS['ymin'])
-    ymax = pn.widgets.FloatSlider(name='Max', start=-30, end=-5, step=0.5, value=DEFAULTS['ymax'])
+    ymin = pn.widgets.FloatSlider(name='Min', start=-30, end=-5, step=0.5, value=DEFAULTS['ymin'], bar_color="#1B3B5A")
+    ymax = pn.widgets.FloatSlider(name='Max', start=-30, end=-5, step=0.5, value=DEFAULTS['ymax'], bar_color="#1B3B5A")
 
-    reset_btn = pn.widgets.Button(name='Reset to Defaults', button_type='warning', icon='refresh', sizing_mode='stretch_width')
+    reset_btn = pn.widgets.Button(
+        name='Reset to Defaults',
+        button_type='primary',
+        icon='refresh',
+        height=38,
+        sizing_mode='stretch_width',
+        css_classes=['reset-control'],
+    )
     def reset_callback(event):
         mmin.value = DEFAULTS['mmin']; mmax.value = DEFAULTS['mmax']
         ymin.value = DEFAULTS['ymin']; ymax.value = DEFAULTS['ymax']
@@ -369,8 +522,22 @@ def create_dashboard():
 
     # 2. Sidebar Sections
     model_checks = {m["name"]: pn.widgets.Checkbox(name=m.get("display_name", m["name"]), value=True) for m in models}
-    sel_all_mod = pn.widgets.Button(name='Select All', button_type='light', height=30, margin=5)
-    sel_no_mod  = pn.widgets.Button(name='Select None', button_type='light', height=30, margin=5)
+    sel_all_mod = pn.widgets.Button(
+        name='All Models',
+        button_type='light',
+        height=30,
+        margin=(8, 3, 0, 0),
+        sizing_mode='stretch_width',
+        css_classes=['bulk-action'],
+    )
+    sel_no_mod  = pn.widgets.Button(
+        name='Clear',
+        button_type='light',
+        height=30,
+        margin=(8, 0, 0, 3),
+        sizing_mode='stretch_width',
+        css_classes=['bulk-action'],
+    )
     
     def update_models(event, state):
         for chk in model_checks.values(): chk.value = state
@@ -386,38 +553,57 @@ def create_dashboard():
         model_categories[cat].append(m["name"])
     
     # Create accordion for model categories
-    model_accordion = pn.Accordion(toggle=True)
+    model_accordion = pn.Accordion(toggle=True, css_classes=['modern-accordion'])
     for cat_name in ["KSVZ-like", "DFSZ-like", "Strongly deviated"]:
         if cat_name in model_categories:
             cat_checks = [model_checks[name] for name in model_categories[cat_name]]
-            col = pn.Column(*cat_checks, scroll=True, height=100)
+            col = pn.Column(*cat_checks, scroll=True, height=96, css_classes=['checklist-panel', 'checklist-scroll'])
             model_accordion.append((cat_name, col))
     
     model_card = pn.Card(
         model_accordion,
-        pn.Row(sel_all_mod, sel_no_mod),
+        pn.Row(sel_all_mod, sel_no_mod, sizing_mode="stretch_width"),
         title="QCD Axion Models",
-        collapsed=True
+        collapsed=True,
+        css_classes=['modern-card']
     )
 
     cat_widgets = {}
-    limit_accordion = pn.Accordion(toggle=True)
+    limit_accordion = pn.Accordion(toggle=True, css_classes=['modern-accordion'])
     def make_callback(c_dict, state):
         return lambda e: [setattr(w, 'value', state) for w in c_dict.values()]
 
     for cat_name, subgroups in categories.items():
-        sub_accordion = pn.Accordion(toggle=True)
+        sub_accordion = pn.Accordion(toggle=True, css_classes=['modern-accordion', 'subgroup-accordion'])
         cat_widgets[cat_name] = {"subgroups": {}}
         for subgroup_name, items in subgroups.items():
             if not items:
                 continue
             checks = {it["name"]: pn.widgets.Checkbox(name=it["name"], value=it.get("visible", False)) for it in items}
-            b_all = pn.widgets.Button(name='All', button_type='light', height=30, margin=2)
-            b_no  = pn.widgets.Button(name='None', button_type='light', height=30, margin=2)
+            b_all = pn.widgets.Button(
+                name='All',
+                button_type='light',
+                height=28,
+                margin=(6, 3, 0, 0),
+                sizing_mode='stretch_width',
+                css_classes=['bulk-action'],
+            )
+            b_no  = pn.widgets.Button(
+                name='Clear',
+                button_type='light',
+                height=28,
+                margin=(6, 0, 0, 3),
+                sizing_mode='stretch_width',
+                css_classes=['bulk-action'],
+            )
             b_all.on_click(make_callback(checks, True))
             b_no.on_click(make_callback(checks, False))
             cat_widgets[cat_name]["subgroups"][subgroup_name] = {"checks": checks, "items": items}
-            sub_col = pn.Column(pn.Column(*checks.values(), scroll=True, height=120), pn.Row(b_all, b_no))
+            sub_col = pn.Column(
+                pn.Column(*checks.values(), scroll=True, height=128, css_classes=['checklist-panel', 'checklist-scroll']),
+                pn.Row(b_all, b_no, sizing_mode="stretch_width"),
+                css_classes=['checklist-panel'],
+            )
             sub_accordion.append((subgroup_name, sub_col))
         if cat_widgets[cat_name]["subgroups"]:
             limit_accordion.append((cat_name, sub_accordion))
@@ -425,7 +611,8 @@ def create_dashboard():
     limit_card = pn.Card(
         limit_accordion,
         title="Bounds and Sensitivities",
-        collapsed=True
+        collapsed=True,
+        css_classes=['modern-card']
     )
 
     # 3. Plotting
@@ -622,16 +809,44 @@ def create_dashboard():
         margin=(20, 0, 0, 0)
     )
 
+    def control_heading(title, caption):
+        return pn.pane.HTML(
+            f"<div class='control-panel-title'>{title}</div>"
+            f"<div class='control-panel-caption'>{caption}</div>",
+            sizing_mode="stretch_width",
+        )
+
+    def range_group(title, *widgets):
+        return pn.Column(
+            pn.pane.HTML(f"<div class='range-heading'>{title}</div>", sizing_mode="stretch_width"),
+            *widgets,
+            css_classes=['range-group'],
+            sizing_mode="stretch_width",
+        )
+
+    controls_intro = pn.pane.HTML(
+        "<div class='controls-title'>Controls</div>"
+        "<div class='controls-subtitle'>Choose the visible parameter window and the layers drawn on the plot.</div>",
+        sizing_mode="stretch_width",
+    )
+
+    range_panel = pn.Column(
+        control_heading("Plot Window", "Log-scale limits applied before the bounds are drawn."),
+        range_group("Mass range (log10 eV)", mmin, mmax),
+        range_group("Coupling range (log10 GeV^-1)", ymin, ymax),
+        css_classes=['control-panel'],
+        sizing_mode="stretch_width",
+    )
+
     sidebar_content = pn.Column(
-        pn.pane.Markdown("## Controls"),
-        pn.Card(mmin, mmax, title="Mass Range (mₐ) [log₁₀ eV]", collapsed=False),
-        pn.Card(ymin, ymax, title="Coupling Range (|gₐᵧ|) [log₁₀ GeV⁻¹]", collapsed=False),
+        controls_intro,
+        range_panel,
         reset_btn,
-        pn.layout.Divider(),
+        pn.layout.Divider(css_classes=['control-divider']),
         model_card,
-        pn.layout.Divider(),
         limit_card,
-        sizing_mode="stretch_width"
+        sizing_mode="stretch_width",
+        css_classes=['controls-shell'],
     )
 
     return sidebar_content, mpl_pane, action_bar, footer
