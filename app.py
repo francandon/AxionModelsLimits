@@ -428,10 +428,22 @@ def create_dashboard():
 
         def _plot_bound(fn, kw):
             ox, oy = ax.get_xlim(), ax.get_ylim()
+            existing_texts = set(ax.texts)
             try:
                 try: fn(ax, **kw)
                 except TypeError: fn(ax=ax, **kw)
             except Exception: pass
+            for text_obj in list(ax.texts):
+                if text_obj in existing_texts:
+                    continue
+                try:
+                    x, y = text_obj.get_position()
+                    x = float(x)
+                    y = float(y)
+                except (TypeError, ValueError):
+                    continue
+                if not (min(ox) <= x <= max(ox) and min(oy) <= y <= max(oy)):
+                    text_obj.remove()
             ax.set_xlim(ox); ax.set_ylim(oy)
 
         for cat in cat_widgets.values():
