@@ -24,15 +24,25 @@ import matplotlib.ticker as mticker
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 import matplotlib.cm as cm
 #from scipy.stats import norm
-# --- Pure NumPy replacements for SciPy.stats.norm ---
-def norm_pdf(x):
-    return 1.0/np.sqrt(2*np.pi) * np.exp(-0.5 * x**2)
+# --- Pure NumPy replacements for scipy.stats.norm ---
+# Keep the scipy-compatible (x, loc, scale) signatures because a few plotting
+# helpers call norm.pdf with all three arguments.
+def norm_pdf(x, loc=0.0, scale=1.0):
+    values = np.asarray(x)
+    z = (values - loc) / scale
+    return np.exp(-0.5 * z**2) / (np.sqrt(2*np.pi) * scale)
 
-def norm_cdf(x):
-    return 0.5 * (1 + np.erf(x / np.sqrt(2)))
+def norm_cdf(x, loc=0.0, scale=1.0):
+    # NumPy 2.x does not expose np.erf consistently. math.erf is available in
+    # Pyodide and vectorizing it keeps this module independent of SciPy.
+    from math import erf
+    values = np.asarray(x)
+    z = (values - loc) / (scale * np.sqrt(2.0))
+    result = 0.5 * (1.0 + np.vectorize(erf, otypes=[float])(z))
+    return float(result) if result.ndim == 0 else result
 
-def norm_sf(x):
-    return 1.0 - norm_cdf(x)
+def norm_sf(x, loc=0.0, scale=1.0):
+    return 1.0 - norm_cdf(x, loc=loc, scale=scale)
 
 import matplotlib.patheffects as pe
 import functools
@@ -42,27 +52,23 @@ pltdir_png = pltdir+'plots_png/'
 
 #==============================================================================#
 # Performance optimization: Cache data file loads to eliminate redundant disk I/O
-@functools.lru_cache(maxsize=256)
+@functools.lru_cache(maxsize=512)
 def _load_limit_data_cached(filename):
-    """
-    Load and cache limit data files in memory.
-    Uses functools.lru_cache to avoid redundant disk I/O.
-    Significantly speeds up interactive plot updates (60-80% faster).
-    Max 256 files cached (~20 MB typical, well within memory limits).
-    """
-    return _original_loadtxt(filename)
+    """Parse each limit-data file once and cache the immutable source array."""
+    data = _original_loadtxt(filename)
+    data.setflags(write=False)
+    return data
 
-# Create wrapper that intelligently uses cache for limit data files
+
 def loadtxt(filename, *args, **kwargs):
+    """Cached ``numpy.loadtxt`` wrapper safe for mutating plotting routines.
+
+    Many functions in this module rescale arrays in place. Returning the exact
+    cached array would compound those mutations on every redraw, so callers get
+    a cheap copy while the expensive text parsing remains cached.
     """
-    Wrapper around numpy.loadtxt that caches limit data files.
-    Falls through to numpy.loadtxt for non-standard arguments.
-    """
-    if isinstance(filename, str) and filename.startswith('limit_data/'):
-        # Use cache for limit data files (no *args or **kwargs)
-        if not args and not kwargs:
-            return _load_limit_data_cached(filename)
-    # Fall back to original numpy loadtxt for other cases
+    if isinstance(filename, str) and filename.startswith('limit_data/') and not args and not kwargs:
+        return _load_limit_data_cached(filename).copy()
     return _original_loadtxt(filename, *args, **kwargs)
 
 #==============================================================================#
