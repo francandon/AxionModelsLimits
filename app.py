@@ -2,9 +2,10 @@
 
 Optimized Panel/Pyodide implementation of the redesigned interface.
 
-Build with ``build_site.sh`` supplied alongside this file.  The WebAssembly
-build must include ``assets_fixed.zip`` as a Panel resource; the app deliberately
-performs no synchronous HTTP download during startup.
+Build with ``build_site.sh`` supplied alongside this file.
+Plot labels are adaptively scaled and collision-filtered for wide axis windows.
+When split resource archives are available, the initial WebAssembly bundle uses
+only the default plot data and fetches the rest of the bounds catalogue lazily.
 """
 
 import base64
@@ -230,7 +231,7 @@ def _ensure_runtime_assets() -> None:
     if plot_funcs.exists() and data_dir.exists():
         return
 
-    archive = next((Path(name) for name in ("assets_fixed.zip", "assets_optimized.zip", "assets.zip") if Path(name).exists()), None)
+    archive = next((Path(name) for name in ("assets_core.zip", "assets_fixed.zip", "assets_optimized.zip", "assets.zip") if Path(name).exists()), None)
     if archive is not None:
         with zipfile.ZipFile(archive) as bundle:
             bundle.extractall(".")
@@ -238,11 +239,43 @@ def _ensure_runtime_assets() -> None:
     if not plot_funcs.exists() or not data_dir.exists():
         raise FileNotFoundError(
             "PlotFuncs.py/limit_data are unavailable. Build with the supplied "
-            "build_site.sh so assets_fixed.zip is included with --resources."
+            "build_site.sh so an asset archive is included with --resources."
         )
 
 
 _ensure_runtime_assets()
+
+
+_EXTRA_ASSETS_READY = False
+_EXTRA_ASSETS_SENTINEL = Path("limit_data/AxionPhoton/JWST_Saha.txt")
+
+
+async def _ensure_extra_assets() -> None:
+    """Fetch and unpack the non-default bounds only when the catalogue opens."""
+    global _EXTRA_ASSETS_READY
+    if _EXTRA_ASSETS_READY or _EXTRA_ASSETS_SENTINEL.exists():
+        _EXTRA_ASSETS_READY = True
+        return
+
+    archive = Path("assets_extra.zip")
+    if archive.exists():
+        payload = archive.read_bytes()
+    elif sys.platform == "emscripten":
+        from pyodide.http import pyfetch
+
+        response = await pyfetch("./assets_extra.zip")
+        if response.status != 200:
+            raise RuntimeError(f"Could not load assets_extra.zip (HTTP {response.status})")
+        payload = await response.bytes()
+    else:
+        raise FileNotFoundError(
+            "assets_extra.zip is required to open the full bounds catalogue."
+        )
+
+    with zipfile.ZipFile(io.BytesIO(payload)) as bundle:
+        bundle.extractall(".")
+    _EXTRA_ASSETS_READY = True
+
 
 from PlotFuncs import AxionPhoton  # noqa: E402
 
@@ -429,6 +462,163 @@ def remove_new_figure_labels(figure: plt.Figure, previous: set[Any]) -> None:
                 text_object.remove()
             except Exception:
                 pass
+
+
+def _normalized_label_text(value: str) -> str:
+    """Return a stable key for duplicate-label detection."""
+    value = re.sub(r"\\begin\{[^}]+\}|\\end\{[^}]+\}", " ", value)
+    value = re.sub(r"\\(?:bf|textbf|mathrm|rm|it)\s*", " ", value)
+    value = value.replace("$", " ").replace("{", " ").replace("}", " ")
+    value = re.sub(r"\\(?:gamma|nu|mu|rightarrow|to|linebreak)", " ", value)
+    return re.sub(r"[^a-z0-9]+", "", value.lower())
+
+
+def _bbox_overlap_fraction(first: Any, second: Any) -> float:
+    """Intersection area divided by the smaller rectangle's area."""
+    width = max(0.0, min(first.x1, second.x1) - max(first.x0, second.x0))
+    height = max(0.0, min(first.y1, second.y1) - max(first.y0, second.y0))
+    intersection = width * height
+    if intersection <= 0:
+        return 0.0
+    denominator = max(1.0, min(first.width * first.height, second.width * second.height))
+    return intersection / denominator
+
+
+def tag_new_bound_labels(axis: plt.Axes, previous: set[Any], source: str, order_counter: list[int]) -> None:
+    """Attach metadata to labels emitted by one PlotFuncs bound function."""
+    for text_object in axis.texts:
+        if text_object in previous:
+            continue
+        order_counter[0] += 1
+        setattr(text_object, "_axe_label_source", source)
+        setattr(text_object, "_axe_label_order", order_counter[0])
+        setattr(text_object, "_axe_original_fontsize", float(text_object.get_fontsize()))
+
+
+def adapt_plot_labels(
+    figure: plt.Figure,
+    axis: plt.Axes,
+    x_limits: tuple[float, float],
+    y_limits: tuple[float, float],
+    mode: str = "AUTO",
+) -> tuple[int, int]:
+    """Scale and declutter fixed-position PlotFuncs labels for the current view.
+
+    PlotFuncs was designed around a canonical log window, so its labels use
+    fixed data coordinates and point sizes.  When many more decades are shown,
+    those anchors compress into the same screen area.  We preserve the original
+    positions, reduce font sizes only while zoomed out, remove exact duplicates,
+    and greedily retain the highest-priority non-overlapping labels.  Not moving
+    labels is deliberate: displaced experiment names can imply the wrong bound.
+    """
+    label_objects = [text_object for text_object in axis.texts if text_object.get_text().strip()]
+    if not label_objects:
+        return 0, 0
+
+    mode = str(mode).upper()
+    if mode == "OFF":
+        for text_object in label_objects:
+            text_object.set_visible(False)
+        return 0, len(label_objects)
+
+    x_decades = max(0.5, float(np.log10(x_limits[1]) - np.log10(x_limits[0])))
+    y_decades = max(0.5, float(np.log10(y_limits[1]) - np.log10(y_limits[0])))
+
+    # The original explorer is most readable around a 10 x 8 decade window.
+    # A sub-linear response keeps important labels legible even at the full
+    # 27-decade slider range.
+    span_pressure = max(1.0, x_decades / 10.0, y_decades / 8.0)
+    count_pressure = max(1.0, len(label_objects) / 45.0)
+    font_scale = float(np.clip(span_pressure ** -0.48 * count_pressure ** -0.12, 0.42, 1.0))
+
+    for text_object in label_objects:
+        original_size = float(getattr(text_object, "_axe_original_fontsize", text_object.get_fontsize()))
+        setattr(text_object, "_axe_original_fontsize", original_size)
+        text_object.set_fontsize(max(6.4, original_size * font_scale))
+        text_object.set_clip_on(True)
+        text_object.set_visible(True)
+
+    # FULL keeps every label but still applies zoom-aware font scaling, which
+    # avoids giant typography at the widest slider settings.
+    if mode == "FULL":
+        return len(label_objects), len(label_objects)
+
+    # Text extents are only reliable after a renderer/layout pass.  Modern
+    # Matplotlib can do this without rasterising the figure a second time.
+    try:
+        if hasattr(figure, "draw_without_rendering"):
+            figure.draw_without_rendering()
+        else:
+            figure.canvas.draw()
+        renderer = figure.canvas.get_renderer()
+    except Exception:
+        return len(label_objects), len(label_objects)
+
+    axes_box = axis.get_window_extent(renderer)
+    usable_box = matplotlib.transforms.Bbox.from_extents(
+        axes_box.x0 + 2.0, axes_box.y0 + 2.0, axes_box.x1 - 2.0, axes_box.y1 - 2.0
+    )
+
+    candidates: list[tuple[float, int, Any, Any, str]] = []
+    for fallback_order, text_object in enumerate(label_objects):
+        try:
+            box = text_object.get_window_extent(renderer=renderer)
+        except Exception:
+            text_object.set_visible(False)
+            continue
+
+        if not np.all(np.isfinite([box.x0, box.y0, box.x1, box.y1])) or box.width <= 0 or box.height <= 0:
+            text_object.set_visible(False)
+            continue
+
+        inside_width = max(0.0, min(box.x1, usable_box.x1) - max(box.x0, usable_box.x0))
+        inside_height = max(0.0, min(box.y1, usable_box.y1) - max(box.y0, usable_box.y0))
+        inside_fraction = (inside_width * inside_height) / max(1.0, box.width * box.height)
+        if inside_fraction < 0.42:
+            text_object.set_visible(False)
+            continue
+
+        # A little breathing room makes labels visually distinct rather than
+        # merely avoiding literal glyph intersection.
+        pad_x = 2.2
+        pad_y = 1.6
+        padded_box = matplotlib.transforms.Bbox.from_extents(
+            box.x0 - pad_x, box.y0 - pad_y, box.x1 + pad_x, box.y1 + pad_y
+        )
+
+        original_size = float(getattr(text_object, "_axe_original_fontsize", text_object.get_fontsize()))
+        font_weight = str(text_object.get_fontweight()).lower()
+        bold_bonus = 2.0 if font_weight in {"bold", "semibold", "demibold", "heavy", "black", "700", "800", "900"} else 0.0
+        zorder_bonus = min(4.0, max(-4.0, float(text_object.get_zorder()))) * 0.08
+        order = int(getattr(text_object, "_axe_label_order", fallback_order))
+        normalized = _normalized_label_text(text_object.get_text())
+        priority = original_size + bold_bonus + zorder_bonus
+        candidates.append((priority, order, text_object, padded_box, normalized))
+
+    # Intended prominence in PlotFuncs is encoded mainly through font size.
+    # Keep larger/bolder labels first; use creation order only as a stable tie
+    # breaker so redraws do not flicker between alternatives.
+    candidates.sort(key=lambda entry: (-entry[0], entry[1]))
+
+    plot_area = max(1.0, usable_box.width * usable_box.height)
+    capacity = int(np.clip((plot_area / 11000.0) / (span_pressure ** 0.18), 14, 38))
+    occupied: list[Any] = []
+    retained_names: set[str] = set()
+    shown = 0
+
+    for _priority, _order, text_object, padded_box, normalized in candidates:
+        duplicate = bool(normalized and normalized in retained_names)
+        collision = any(_bbox_overlap_fraction(padded_box, other) > 0.035 for other in occupied)
+        if duplicate or collision or shown >= capacity:
+            text_object.set_visible(False)
+            continue
+        text_object.set_visible(True)
+        occupied.append(padded_box)
+        if normalized:
+            retained_names.add(normalized)
+        shown += 1
+
+    return shown, len(label_objects)
 
 
 def setup_axes(axis: plt.Axes, x_limits: tuple[float, float], y_limits: tuple[float, float]) -> None:
@@ -655,6 +845,17 @@ def create_dashboard() -> tuple[pn.Column, pn.Column]:
     bound_states = dict(bound_defaults)
     bound_checkboxes: dict[str, pn.widgets.Checkbox] = {}
 
+    label_mode = pn.widgets.RadioButtonGroup(
+        name="",
+        options=["AUTO", "FULL", "OFF"],
+        value="AUTO",
+        button_type="light",
+        height=25,
+        width=142,
+        margin=0,
+        stylesheets=[BTN_TINY_SS],
+    )
+
     mpl_pane = pn.pane.Matplotlib(
         None,
         tight=False,
@@ -688,6 +889,7 @@ def create_dashboard() -> tuple[pn.Column, pn.Column]:
         y_limits = (10 ** ymin.value, 10 ** ymax.value)
         setup_axes(axis, x_limits, y_limits)
         figure.subplots_adjust(left=0.12, right=0.78, bottom=0.14, top=0.96)
+        label_order_counter = [0]
 
         linestyle_map = {"KSVZ-like": "-", "DFSZ-like": "--", "Strongly deviated": ":"}
         linewidth_map = {"KSVZ-like": 1.9, "DFSZ-like": 1.9, "Strongly deviated": 2.0}
@@ -736,8 +938,9 @@ def create_dashboard() -> tuple[pn.Column, pn.Column]:
                     )
                 color_index += 1
 
-        def plot_bound(function: Any, kwargs: dict[str, Any]) -> None:
+        def plot_bound(source_name: str, function: Any, kwargs: dict[str, Any]) -> None:
             old_x, old_y = axis.get_xlim(), axis.get_ylim()
+            existing_axis_text = set(axis.texts)
             existing_figure_text = set(figure.texts)
             plt.sca(axis)
             try:
@@ -749,13 +952,14 @@ def create_dashboard() -> tuple[pn.Column, pn.Column]:
                 print(f"Could not draw bound {getattr(function, '__name__', function)}: {exc}")
             axis.set_xlim(old_x)
             axis.set_ylim(old_y)
+            tag_new_bound_labels(axis, existing_axis_text, source_name, label_order_counter)
             prune_out_of_bounds_labels(axis)
             remove_new_figure_labels(figure, existing_figure_text)
 
         for name, enabled in bound_states.items():
             if enabled:
                 item = bound_items[name]
-                plot_bound(item["fn"], item.get("kwargs", {}))
+                plot_bound(name, item["fn"], item.get("kwargs", {}))
 
         legend = axis.legend(
             loc="upper left",
@@ -773,6 +977,7 @@ def create_dashboard() -> tuple[pn.Column, pn.Column]:
                 text_object.set_fontweight("bold")
         clean_latex(figure)
         prune_out_of_bounds_labels(axis)
+        adapt_plot_labels(figure, axis, x_limits, y_limits, label_mode.value)
 
         if mpl_pane.object is None:
             mpl_pane.object = figure
@@ -788,6 +993,7 @@ def create_dashboard() -> tuple[pn.Column, pn.Column]:
 
     for slider in (mmin, mmax, ymin, ymax):
         slider.param.watch(lambda event: update_plot(), "value_throttled")
+    label_mode.param.watch(lambda event: update_plot(), "value")
 
     def set_models(state: bool) -> None:
         suspended[0] = True
@@ -892,9 +1098,26 @@ def create_dashboard() -> tuple[pn.Column, pn.Column]:
         bounds_placeholder.objects = [outer]
         bounds_built[0] = True
 
-    def on_bounds_card(event: Any) -> None:
-        if event.new is False:
-            build_bounds_catalogue()
+    async def on_bounds_card(event: Any) -> None:
+        if event.new is not False or bounds_built[0]:
+            return
+        bounds_placeholder.objects = [
+            html(
+                f'<div style="font-size:11px;color:{MUTED};line-height:1.5;padding:4px 2px;">'
+                'Loading the extended bounds catalogue&hellip;</div>'
+            )
+        ]
+        try:
+            await _ensure_extra_assets()
+        except Exception as exc:
+            bounds_placeholder.objects = [
+                html(
+                    f'<div style="font-size:11px;color:#9b2c2c;line-height:1.5;padding:4px 2px;">'
+                    f'Could not load the extended bounds data: {exc}</div>'
+                )
+            ]
+            return
+        build_bounds_catalogue()
 
     limit_card.param.watch(on_bounds_card, "collapsed")
 
@@ -933,6 +1156,15 @@ def create_dashboard() -> tuple[pn.Column, pn.Column]:
         ),
         slider_row("min", ymin),
         slider_row("max", ymax),
+        pn.layout.Divider(margin=(7, 0, 8, 0)),
+        pn.Row(
+            html('<div class="axe-range-label">Bound labels</div>'),
+            pn.Spacer(),
+            label_mode,
+            sizing_mode="stretch_width",
+            align="center",
+            margin=0,
+        ),
         styles={
             "background": CARD,
             "border": f"1px solid {LINE}",
@@ -952,6 +1184,7 @@ def create_dashboard() -> tuple[pn.Column, pn.Column]:
             mmax.value = defaults["mmax"]
             ymin.value = defaults["ymin"]
             ymax.value = defaults["ymax"]
+            label_mode.value = "AUTO"
             for checkbox in model_checks.values():
                 checkbox.value = True
             for name, value in bound_defaults.items():
